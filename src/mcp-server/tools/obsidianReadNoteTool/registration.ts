@@ -14,6 +14,7 @@ import type {
 } from "./logic.js";
 import {
   ObsidianReadNoteInputSchema,
+  ObsidianReadNoteInputSchemaShape,
   processObsidianReadNote,
 } from "./logic.js";
 
@@ -60,7 +61,7 @@ export const registerObsidianReadNoteTool = async (
       server.tool(
         toolName,
         toolDescription,
-        ObsidianReadNoteInputSchema.shape, // Provide the Zod schema shape for input definition.
+        ObsidianReadNoteInputSchemaShape, // Provide the Zod schema shape for input definition.
         /**
          * The handler function executed when the 'obsidian_read_note' tool is called by the client.
          *
@@ -91,12 +92,13 @@ export const registerObsidianReadNoteTool = async (
           // Wrap the core logic execution in a tryCatch block.
           return await ErrorHandler.tryCatch(
             async () => {
+              // Validate the input parameters using the full refined schema
+              const validatedParams = ObsidianReadNoteInputSchema.parse(params);
+
               // Delegate the actual file reading logic to the dedicated processing function.
-              // Pass the (already shape-validated) parameters, context, and the Obsidian service.
-              // The process function handles the refined validation internally if needed, but here shape = refined.
               const response: ObsidianReadNoteResponse =
                 await processObsidianReadNote(
-                  params, // Pass params directly as shape matches refined schema
+                  validatedParams,
                   handlerContext,
                   obsidianService,
                 );

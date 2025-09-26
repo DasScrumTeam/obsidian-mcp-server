@@ -17,14 +17,16 @@ import type {
 } from "./logic.js";
 import {
   ObsidianDeleteNoteInputSchema,
+  ObsidianDeleteNoteInputSchemaShape,
   processObsidianDeleteNote,
 } from "./logic.js";
 
 /**
  * Registers the 'obsidian_delete_note' tool with the MCP server.
  *
- * This tool permanently deletes a specified file from the user's Obsidian vault.
- * It requires the vault-relative path, including the file extension. The tool
+ * This tool permanently deletes a file from the user's Obsidian vault.
+ * It supports targeting by specific file path or currently active file.
+ * For filePath targeting: requires the vault-relative path, including the file extension,
  * attempts a case-sensitive deletion first, followed by a case-insensitive
  * fallback search and delete if the initial attempt fails with a 'NOT_FOUND' error.
  *
@@ -42,9 +44,9 @@ export const registerObsidianDeleteNoteTool = async (
   vaultCacheService: VaultCacheService | undefined,
 ): Promise<void> => {
   const toolName = "obsidian_delete_note";
-  // Updated description to accurately reflect the response (no timestamp)
+  // Updated description to reflect active file support
   const toolDescription =
-    "Permanently deletes a specified file from the Obsidian vault. Tries the exact path first, then attempts a case-insensitive fallback if the file is not found. Requires the vault-relative path including the file extension. Returns a success message.";
+    "Permanently deletes a file from the Obsidian vault. Supports targeting by file path (with case-insensitive fallback) or currently active file. For filePath targeting, requires the vault-relative path including the file extension. Returns a success message.";
 
   // Create a context specifically for the registration process.
   const registrationContext: RequestContext =
@@ -63,7 +65,7 @@ export const registerObsidianDeleteNoteTool = async (
       server.tool(
         toolName,
         toolDescription,
-        ObsidianDeleteNoteInputSchema.shape, // Provide the Zod schema shape for input definition.
+        ObsidianDeleteNoteInputSchemaShape, // Provide the Zod schema shape for input definition.
         /**
          * The handler function executed when the 'obsidian_delete_note' tool is called by the client.
          *
@@ -80,18 +82,23 @@ export const registerObsidianDeleteNoteTool = async (
               parentContext: registrationContext, // Link to registration context
               operation: "HandleObsidianDeleteNoteRequest",
               toolName: toolName,
-              params: { filePath: params.filePath }, // Log the file path being targeted
+              params: {
+                filePath: params.filePath,
+                targetType: params.targetType,
+              }, // Log the targeting parameters
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           // Wrap the core logic execution in a tryCatch block.
           return await ErrorHandler.tryCatch(
             async () => {
+              // Validate the input parameters using the full refined schema
+              const validatedParams = ObsidianDeleteNoteInputSchema.parse(params);
+
               // Delegate the actual file deletion logic to the processing function.
-              // Note: Input schema and shape are identical, no separate refinement parse needed here.
               const response: ObsidianDeleteNoteResponse =
                 await processObsidianDeleteNote(
-                  params,
+                  validatedParams,
                   handlerContext,
                   obsidianService,
                   vaultCacheService,

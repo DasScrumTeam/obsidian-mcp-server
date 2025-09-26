@@ -29,6 +29,18 @@ const ReadNoteFormatSchema = z
   );
 
 /**
+ * Defines the target type for the read operation.
+ * - 'filePath': Read a specific file by vault-relative path.
+ * - 'activeFile': Read the currently active file in Obsidian.
+ */
+const ReadNoteTargetTypeSchema = z
+  .enum(["filePath", "activeFile"])
+  .default("filePath")
+  .describe(
+    "Specifies how to target the file ('filePath' for specific path, 'activeFile' for currently active file). Defaults to 'filePath'.",
+  );
+
+/**
  * Zod schema for validating the input parameters of the 'obsidian_read_note' tool.
  */
 export const ObsidianReadNoteInputSchema = z
@@ -37,12 +49,23 @@ export const ObsidianReadNoteInputSchema = z
      * The vault-relative path to the target file (e.g., "Folder/My Note.md").
      * Must include the file extension. The tool first attempts a case-sensitive match.
      * If not found, it attempts a case-insensitive fallback search within the same directory.
+     * Required when targetType is 'filePath', ignored when targetType is 'activeFile'.
      */
     filePath: z
       .string()
-      .min(1, "filePath cannot be empty")
+      .optional()
       .describe(
-        'The vault-relative path to the target file (e.g., "developer/github/tips.md"). Tries case-sensitive first, then case-insensitive fallback.',
+        'The vault-relative path to the target file (e.g., "developer/github/tips.md"). Required for targetType "filePath", ignored for "activeFile".',
+      ),
+    /**
+     * Specifies how to target the file for reading.
+     * 'filePath' requires a filePath parameter and reads the specified file.
+     * 'activeFile' reads the currently active file in Obsidian and ignores filePath.
+     * Defaults to 'filePath'.
+     */
+    targetType: ReadNoteTargetTypeSchema.optional()
+      .describe(
+        "How to target the file ('filePath' for specific path, 'activeFile' for currently active). Defaults to 'filePath'.",
       ),
     /**
      * Specifies the desired format for the returned content.
@@ -67,8 +90,19 @@ export const ObsidianReadNoteInputSchema = z
         "If true and format is 'markdown', includes file stats in the response. Defaults to false. Ignored if format is 'json'.",
       ),
   })
+  .refine(
+    (data) => {
+      // If targetType is 'filePath' (or default), filePath must be provided
+      const targetType = data.targetType ?? "filePath";
+      return targetType !== "filePath" || (data.filePath && data.filePath.length > 0);
+    },
+    {
+      message: "filePath is required when targetType is 'filePath'",
+      path: ["filePath"],
+    },
+  )
   .describe(
-    "Retrieves the content and optionally metadata of a specific file within the connected Obsidian vault. Supports case-insensitive path fallback.",
+    "Retrieves the content and optionally metadata of a file within the connected Obsidian vault. Supports both specific file paths and currently active file targeting.",
   );
 
 /**
@@ -76,6 +110,40 @@ export const ObsidianReadNoteInputSchema = z
  * Represents the validated input parameters used within the core processing logic.
  */
 export type ObsidianReadNoteInput = z.infer<typeof ObsidianReadNoteInputSchema>;
+
+// ====================================================================================
+// Input Schema Shape for MCP Registration
+// ====================================================================================
+
+/**
+ * The base shape of the input schema, used for MCP tool registration.
+ * This extracts the inner object shape before the refine validation.
+ */
+export const ObsidianReadNoteInputSchemaShape = z
+  .object({
+    filePath: z
+      .string()
+      .optional()
+      .describe(
+        'The vault-relative path to the target file (e.g., "developer/github/tips.md"). Required for targetType "filePath", ignored for "activeFile".',
+      ),
+    targetType: ReadNoteTargetTypeSchema.optional()
+      .describe(
+        "How to target the file ('filePath' for specific path, 'activeFile' for currently active). Defaults to 'filePath'.",
+      ),
+    format: ReadNoteFormatSchema.optional()
+      .describe(
+        "Format for the returned content ('markdown' or 'json'). Defaults to 'markdown'.",
+      ),
+    includeStat: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        "If true and format is 'markdown', includes file stats in the response. Defaults to false. Ignored if format is 'json'.",
+      ),
+  })
+  .shape;
 
 // ====================================================================================
 // Response Type Definition
@@ -139,14 +207,15 @@ export const processObsidianReadNote = async (
 ): Promise<ObsidianReadNoteResponse> => {
   const {
     filePath: originalFilePath,
+    targetType = "filePath",
     format: requestedFormat,
     includeStat,
   } = params;
-  let effectiveFilePath = originalFilePath; // Track the actual path used (might change during fallback)
+  let effectiveFilePath = originalFilePath || "activeFile"; // Track the actual path used (might change during fallback)
 
   logger.debug(
-    `Processing obsidian_read_note request for path: ${originalFilePath}`,
-    { ...context, format: requestedFormat, includeStat },
+    `Processing obsidian_read_note request. Target type: ${targetType}, path: ${originalFilePath || "N/A (active file)"}`,
+    { ...context, targetType, format: requestedFormat, includeStat },
   );
 
   const shouldRetryNotFound = (err: unknown) =>
@@ -157,33 +226,52 @@ export const processObsidianReadNote = async (
 
     // --- Step 1: Read File Content (always fetch JSON internally) ---
     const readContext = { ...context, operation: "readFileAsJson" };
-    try {
-      // Attempt 1: Read using the provided path (case-sensitive)
-      logger.debug(
-        `Attempting to read file as JSON (case-sensitive): ${originalFilePath}`,
-        readContext,
-      );
+
+    if (targetType === "activeFile") {
+      // Read the currently active file
+      logger.debug("Attempting to read active file as JSON", readContext);
       noteJson = await retryWithDelay(
         () =>
-          obsidianService.getFileContent(
-            originalFilePath,
-            "json",
-            readContext,
-          ) as Promise<NoteJson>,
+          obsidianService.getActiveFile("json", readContext) as Promise<NoteJson>,
         {
-          operationName: "readFileWithRetry",
+          operationName: "readActiveFileWithRetry",
           context: readContext,
           maxRetries: 3,
           delayMs: 300,
           shouldRetry: shouldRetryNotFound,
         },
       );
-      effectiveFilePath = originalFilePath; // Confirm exact path worked
-      logger.debug(
-        `Successfully read file as JSON using exact path: ${originalFilePath}`,
-        readContext,
-      );
-    } catch (error) {
+      effectiveFilePath = "activeFile"; // Mark this as active file for logging
+      logger.debug("Successfully read active file as JSON", readContext);
+    } else {
+      // targetType === "filePath" - existing file path logic
+      try {
+        // Attempt 1: Read using the provided path (case-sensitive)
+        logger.debug(
+          `Attempting to read file as JSON (case-sensitive): ${originalFilePath}`,
+          readContext,
+        );
+        noteJson = await retryWithDelay(
+          () =>
+            obsidianService.getFileContent(
+              originalFilePath!,
+              "json",
+              readContext,
+            ) as Promise<NoteJson>,
+          {
+            operationName: "readFileWithRetry",
+            context: readContext,
+            maxRetries: 3,
+            delayMs: 300,
+            shouldRetry: shouldRetryNotFound,
+          },
+        );
+        effectiveFilePath = originalFilePath!; // Confirm exact path worked
+        logger.debug(
+          `Successfully read file as JSON using exact path: ${originalFilePath}`,
+          readContext,
+        );
+      } catch (error) {
       // Attempt 2: Case-insensitive fallback if initial read failed with NOT_FOUND
       if (error instanceof McpError && error.code === BaseErrorCode.NOT_FOUND) {
         logger.info(
@@ -196,6 +284,15 @@ export const processObsidianReadNote = async (
         };
 
         try {
+          // Ensure originalFilePath exists for fallback (should be guaranteed by validation)
+          if (!originalFilePath) {
+            throw new McpError(
+              BaseErrorCode.VALIDATION_ERROR,
+              "File path is required for case-insensitive fallback",
+              fallbackContext,
+            );
+          }
+
           // Use POSIX path functions as vault paths are typically /-separated
           const dirname = path.posix.dirname(originalFilePath);
           const filenameLower = path.posix
@@ -297,6 +394,7 @@ export const processObsidianReadNote = async (
       } else {
         // Re-throw errors from the initial read attempt that were not NOT_FOUND
         throw error;
+      }
       }
     }
 
