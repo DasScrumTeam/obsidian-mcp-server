@@ -17,6 +17,7 @@ import {
 } from "../../utils/index.js"; // Added requestContextService
 import * as activeFileMethods from "./methods/activeFileMethods.js";
 import * as commandMethods from "./methods/commandMethods.js";
+import * as editorMethods from "./methods/editorMethods.js";
 import * as openMethods from "./methods/openMethods.js";
 import * as patchMethods from "./methods/patchMethods.js";
 import * as periodicNoteMethods from "./methods/periodicNoteMethods.js";
@@ -616,5 +617,21 @@ export class ObsidianRestApiService {
       options,
       context,
     );
+  }
+
+  /**
+   * Get the currently selected text in the active Obsidian editor.
+   *
+   * This method calls the /active/selection/ endpoint provided by the AME3Helper
+   * plugin's REST API extension.
+   *
+   * @param context - Request context for logging and correlation
+   * @returns Promise resolving to the selection response
+   * @throws Error if no active editor or if the endpoint is not available
+   */
+  async getActiveSelection(
+    context: RequestContext,
+  ): Promise<editorMethods.SelectionResponse> {
+    return editorMethods.getActiveSelection(this._request.bind(this), context);
   }
 }

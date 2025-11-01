@@ -29,7 +29,11 @@
       "Bash(env)",
       "Bash(npx obsidian-mcp-server@2.1.0:*)",
       "Bash(npm view:*)",
-      "Bash(tar:*)"
+      "Bash(tar:*)",
+      "Bash(curl:*)",
+      "Bash(timeout:*)",
+      "Bash(mcp__obsidian-mcp-server__obsidian_execute_command '{\"\"commandId\"\":\"\"app:reload\"\",\"\"timeout\"\":10000}')",
+      "Bash(npm run rebuild:*)"
     ],
     "deny": [],
     "ask": []
