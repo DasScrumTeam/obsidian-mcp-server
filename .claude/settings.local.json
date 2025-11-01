@@ -17,7 +17,19 @@
       "Bash(git branch:*)",
       "WebFetch(domain:docs.obsidian.md)",
       "Read(//Users/peterbeck/Obsidian/AME3/.obsidian/plugins/**)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git fetch:*)",
+      "Bash(git rev-parse:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(git show:*)",
+      "Bash(git merge-base:*)",
+      "Bash(source ~/.zshrc)",
+      "Bash(env)",
+      "Bash(npx obsidian-mcp-server@2.1.0:*)",
+      "Bash(npm view:*)",
+      "Bash(tar:*)"
     ],
     "deny": [],
     "ask": []
