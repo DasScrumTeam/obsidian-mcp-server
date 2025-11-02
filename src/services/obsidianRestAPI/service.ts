@@ -634,4 +634,29 @@ export class ObsidianRestApiService {
   ): Promise<editorMethods.SelectionResponse> {
     return editorMethods.getActiveSelection(this._request.bind(this), context);
   }
+
+  /**
+   * Replace text at specific positions in the active Obsidian editor.
+   *
+   * This method performs fail-safe validation before replacing text:
+   * - Active editor exists
+   * - File path matches expected
+   * - Positions are within bounds
+   * - Content at positions matches expectedText
+   *
+   * @param context - Request context for logging and correlation
+   * @param params - Replacement parameters (file, newText, positions, expectedText, origin)
+   * @returns Promise resolving to the replacement response
+   * @throws Error if validation fails or replacement operation fails
+   */
+  async replaceActiveSection(
+    context: RequestContext,
+    params: editorMethods.ReplaceRangeRequest,
+  ): Promise<editorMethods.ReplaceRangeResponse> {
+    return editorMethods.replaceActiveSection(
+      this._request.bind(this),
+      context,
+      params,
+    );
+  }
 }

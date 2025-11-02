@@ -181,7 +181,7 @@ In-memory cache for improved performance and resilience:
 
 ## MCP Tools Available
 
-The server provides 11 standardized MCP tools:
+The server provides 12 standardized MCP tools:
 
 ### Note Operations
 - `obsidian_read_note` - Read note content and metadata (markdown or JSON format)
@@ -191,6 +191,7 @@ The server provides 11 standardized MCP tools:
 
 ### Editor Operations
 - `obsidian_get_selection` - Retrieve currently selected text from active Obsidian editor (requires AME3Helper plugin)
+- `obsidian_replace_section` - Replace text at specific positions with fail-safe validation (requires AME3Helper plugin)
 
 ### Search & Replace
 - `obsidian_global_search` - Search across entire vault (text/regex, pagination)

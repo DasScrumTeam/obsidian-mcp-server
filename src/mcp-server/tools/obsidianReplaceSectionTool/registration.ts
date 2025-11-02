@@ -9,24 +9,27 @@ import {
 } from "../../../utils/index.js";
 // Import necessary types, schema, and logic function from the logic file
 import type {
-  ObsidianGetSelectionInput,
-  ObsidianGetSelectionResponse,
+  ObsidianReplaceSectionInput,
+  ObsidianReplaceSectionResponse,
 } from "./logic.js";
 import {
-  ObsidianGetSelectionInputSchema,
-  ObsidianGetSelectionInputSchemaShape,
-  processObsidianGetSelection,
+  ObsidianReplaceSectionInputSchema,
+  ObsidianReplaceSectionInputSchemaShape,
+  processObsidianReplaceSection,
 } from "./logic.js";
 
 /**
- * Registers the 'obsidian_get_selection' tool with the MCP server.
+ * Registers the 'obsidian_replace_section' tool with the MCP server.
  *
- * This tool retrieves the currently selected text from the active Obsidian editor.
- * It operates on the currently active markdown view and returns information about
- * whether text is selected, the selected text content, and the path to the active file.
+ * This tool replaces text at specific positions in the active Obsidian editor
+ * with comprehensive fail-safe validation:
+ * - Active editor exists
+ * - File path matches expected
+ * - Positions are within bounds
+ * - Content at positions matches expectedText
  *
  * This tool requires the AME3Helper plugin's REST API extension to be registered,
- * which provides the /active/selection/ endpoint.
+ * which provides the /active/replace-range/ endpoint.
  *
  * @param {McpServer} server - The MCP server instance to register the tool with.
  * @param {ObsidianRestApiService} obsidianService - An instance of the Obsidian REST API service
@@ -34,20 +37,20 @@ import {
  * @returns {Promise<void>} A promise that resolves when the tool registration is complete or rejects on error.
  * @throws {McpError} Throws an McpError if registration fails critically.
  */
-export const registerObsidianGetSelectionTool = async (
+export const registerObsidianReplaceSectionTool = async (
   server: McpServer,
   obsidianService: ObsidianRestApiService,
 ): Promise<void> => {
-  const toolName = "obsidian_get_selection";
+  const toolName = "obsidian_replace_section";
   const toolDescription =
-    "Retrieves the currently selected text from the active Obsidian editor with position information. Returns an object containing whether text is selected ('selected': boolean), the selected text content ('text': string, empty if no selection), the path to the active file ('file': string | null), and position information ('positions': {start: {line, ch}, end: {line, ch}} | null). Position coordinates are 0-indexed (line 0, ch 0 is the first character). Positions are null if no text is selected. Requires no input parameters. Note: This tool requires the AME3Helper plugin with REST API extension to be active.";
+    "Replace text at specific positions in the active Obsidian editor with fail-safe validation. Requires file path, new text, position coordinates (0-indexed), and expected text for validation. Performs 4-layer safety validation: (1) active editor exists, (2) file path matches, (3) positions within bounds, (4) content matches expectedText. Returns success status, file path, replaced text, new text, and final positions. Position coordinates are 0-indexed (line 0, ch 0 is the first character). This operation is atomic and includes undo history tracking. Note: This tool requires the AME3Helper plugin with REST API extension to be active.";
 
   // Create a context specifically for the registration process.
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
-      operation: "RegisterObsidianGetSelectionTool",
+      operation: "RegisterObsidianReplaceSectionTool",
       toolName: toolName,
-      module: "ObsidianGetSelectionRegistration",
+      module: "ObsidianReplaceSectionRegistration",
     });
 
   logger.info(`Attempting to register tool: ${toolName}`, registrationContext);
@@ -59,40 +62,45 @@ export const registerObsidianGetSelectionTool = async (
       server.tool(
         toolName,
         toolDescription,
-        ObsidianGetSelectionInputSchemaShape, // Provide the Zod schema shape for input definition.
+        ObsidianReplaceSectionInputSchemaShape, // Provide the Zod schema shape for input definition.
         /**
-         * The handler function executed when the 'obsidian_get_selection' tool is called by the client.
+         * The handler function executed when the 'obsidian_replace_section' tool is called by the client.
          *
-         * @param {ObsidianGetSelectionInput} params - The input parameters (empty object in this case).
+         * @param {ObsidianReplaceSectionInput} params - The input parameters
          * @returns {Promise<CallToolResult>} A promise resolving to the structured result for the MCP client.
          */
-        async (params: ObsidianGetSelectionInput) => {
+        async (params: ObsidianReplaceSectionInput) => {
           // Create a specific context for this handler invocation.
           const handlerContext: RequestContext =
             requestContextService.createRequestContext({
               parentContext: registrationContext,
-              operation: "HandleObsidianGetSelectionRequest",
+              operation: "HandleObsidianReplaceSectionRequest",
               toolName: toolName,
-              params: {}, // No parameters for this tool
+              params: {
+                file: params.file,
+                expectedTextLength: params.expectedText?.length || 0,
+                newTextLength: params.newText?.length || 0,
+                positions: params.positions,
+              },
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 
           // Wrap the core logic execution in a tryCatch block.
           return await ErrorHandler.tryCatch(
             async () => {
-              // Validate the input parameters (even though it's an empty object)
+              // Validate the input parameters
               const validatedParams =
-                ObsidianGetSelectionInputSchema.parse(params);
+                ObsidianReplaceSectionInputSchema.parse(params);
 
-              // Delegate the actual selection retrieval logic to the dedicated processing function.
-              const response: ObsidianGetSelectionResponse =
-                await processObsidianGetSelection(
+              // Delegate the actual replacement logic to the dedicated processing function.
+              const response: ObsidianReplaceSectionResponse =
+                await processObsidianReplaceSection(
                   validatedParams,
                   handlerContext,
                   obsidianService,
                 );
               logger.debug(
-                `'${toolName}' processed successfully. Selected: ${response.selected}`,
+                `'${toolName}' processed successfully. Replaced ${response.replacedText.length} chars with ${response.newText.length} chars`,
                 handlerContext,
               );
 

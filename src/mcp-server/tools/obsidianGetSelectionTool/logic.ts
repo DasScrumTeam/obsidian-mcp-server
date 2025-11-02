@@ -18,7 +18,7 @@ import {
 export const ObsidianGetSelectionInputSchema = z
   .object({})
   .describe(
-    "Retrieves the currently selected text from the active Obsidian editor. No parameters required.",
+    "Retrieves the currently selected text from the active Obsidian editor with position information. No parameters required.",
   );
 
 /**
@@ -43,6 +43,26 @@ export const ObsidianGetSelectionInputSchemaShape = z.object({}).shape;
 // ====================================================================================
 
 /**
+ * Represents a position in the editor (0-indexed)
+ */
+export interface EditorPosition {
+  /** 0-indexed line number */
+  line: number;
+  /** 0-indexed character position within line */
+  ch: number;
+}
+
+/**
+ * Represents the start and end positions of a selection
+ */
+export interface SelectionPositions {
+  /** Start position of selection */
+  start: EditorPosition;
+  /** End position of selection */
+  end: EditorPosition;
+}
+
+/**
  * Defines the structure of the successful response returned by the `processObsidianGetSelection` function.
  * This matches the SelectionResponse interface from the editorMethods service.
  */
@@ -59,6 +79,11 @@ export interface ObsidianGetSelectionResponse {
    * Path to the active file (null if no active file or editor).
    */
   file: string | null;
+  /**
+   * Position information (null if no selection).
+   * Coordinates are 0-indexed: {start: {line, ch}, end: {line, ch}}
+   */
+  positions: SelectionPositions | null;
 }
 
 // ====================================================================================
