@@ -30,6 +30,9 @@ import { registerObsidianGlobalSearchTool } from "./tools/obsidianGlobalSearchTo
 import { registerObsidianListNotesTool } from "./tools/obsidianListNotesTool/index.js";
 import { registerObsidianReadNoteTool } from "./tools/obsidianReadNoteTool/index.js";
 import { registerObsidianGetSelectionTool } from "./tools/obsidianGetSelectionTool/index.js";
+import { registerObsidianGetActiveNoteTool } from "./tools/obsidianGetActiveNoteTool/index.js";
+import { registerObsidianConnectSessionTool } from "./tools/obsidianConnectSessionTool/index.js";
+import { registerObsidianDisconnectSessionTool } from "./tools/obsidianDisconnectSessionTool/index.js";
 import { registerObsidianReplaceSectionTool } from "./tools/obsidianReplaceSectionTool/index.js";
 import { registerObsidianSearchReplaceTool } from "./tools/obsidianSearchReplaceTool/index.js";
 import { registerObsidianUpdateNoteTool } from "./tools/obsidianUpdateNoteTool/index.js";
@@ -109,6 +112,9 @@ async function createMcpServerInstance(
     await registerObsidianListNotesTool(server, obsidianService);
     await registerObsidianReadNoteTool(server, obsidianService);
     await registerObsidianGetSelectionTool(server, obsidianService);
+    await registerObsidianGetActiveNoteTool(server, obsidianService);
+    await registerObsidianConnectSessionTool(server, obsidianService);
+    await registerObsidianDisconnectSessionTool(server, obsidianService);
     await registerObsidianReplaceSectionTool(server, obsidianService);
     await registerObsidianDeleteNoteTool(
       server,

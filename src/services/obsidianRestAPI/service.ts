@@ -620,6 +620,22 @@ export class ObsidianRestApiService {
   }
 
   /**
+   * Get the vault-relative path of the currently active markdown file.
+   *
+   * This method calls the /active/note/ endpoint provided by the AME3Helper
+   * plugin's REST API extension.
+   *
+   * @param context - Request context for logging and correlation
+   * @returns Promise resolving to the active note response
+   * @throws Error if no active file or if the endpoint is not available
+   */
+  async getActiveNote(
+    context: RequestContext,
+  ): Promise<editorMethods.ActiveNoteResponse> {
+    return editorMethods.getActiveNote(this._request.bind(this), context);
+  }
+
+  /**
    * Get the currently selected text in the active Obsidian editor.
    *
    * This method calls the /active/selection/ endpoint provided by the AME3Helper
@@ -654,6 +670,50 @@ export class ObsidianRestApiService {
     params: editorMethods.ReplaceRangeRequest,
   ): Promise<editorMethods.ReplaceRangeResponse> {
     return editorMethods.replaceActiveSection(
+      this._request.bind(this),
+      context,
+      params,
+    );
+  }
+
+  /**
+   * Connect a Claude session to the active Obsidian note.
+   *
+   * Atomically writes the 'ai-claude-session' frontmatter field to the
+   * currently active markdown file using Obsidian's processFrontMatter API.
+   *
+   * @param context - Request context for logging and correlation
+   * @param params - The session connection parameters (sessionId)
+   * @returns Promise resolving to the connect session response (file path + sessionId)
+   * @throws Error if no active file, invalid sessionId, or frontmatter write fails
+   */
+  async connectSession(
+    context: RequestContext,
+    params: editorMethods.ConnectSessionRequest,
+  ): Promise<editorMethods.ConnectSessionResponse> {
+    return editorMethods.connectSession(
+      this._request.bind(this),
+      context,
+      params,
+    );
+  }
+
+  /**
+   * Disconnect a Claude session from an Obsidian note.
+   *
+   * Atomically removes the 'ai-claude-session' frontmatter field from the
+   * specified note (or the active note if no filePath provided).
+   *
+   * @param context - Request context for logging and correlation
+   * @param params - Optional parameters (filePath to target a specific note)
+   * @returns Promise resolving to the disconnect session response
+   * @throws Error if file not found or frontmatter write fails
+   */
+  async disconnectSession(
+    context: RequestContext,
+    params: editorMethods.DisconnectSessionRequest,
+  ): Promise<editorMethods.DisconnectSessionResponse> {
+    return editorMethods.disconnectSession(
       this._request.bind(this),
       context,
       params,

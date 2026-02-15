@@ -42,6 +42,39 @@ export interface SelectionResponse {
 }
 
 /**
+ * Response from the /active/note/ endpoint
+ */
+export interface ActiveNoteResponse {
+  /** Vault-relative path of the active markdown file (null if no active file) */
+  file: string | null;
+}
+
+/**
+ * Get the vault-relative path of the currently active markdown file.
+ *
+ * This method calls the /active/note/ endpoint provided by the AME3Helper
+ * plugin's REST API extension.
+ *
+ * @param _request - The HTTP request function from the service
+ * @param context - Request context for logging and correlation
+ * @returns Promise resolving to the active note response
+ * @throws Error if no active file or if the endpoint is not available
+ */
+export async function getActiveNote(
+  _request: RequestFunction,
+  context: RequestContext,
+): Promise<ActiveNoteResponse> {
+  return _request<ActiveNoteResponse>(
+    {
+      method: 'GET',
+      url: '/active/note/',
+    },
+    context,
+    'getActiveNote',
+  );
+}
+
+/**
  * Get the currently selected text in the active Obsidian editor.
  *
  * This method calls the /active/selection/ endpoint provided by the AME3Helper
@@ -127,5 +160,99 @@ export async function replaceActiveSection(
     },
     context,
     'replaceActiveSection',
+  );
+}
+
+/**
+ * Request parameters for connecting a session to the active note
+ */
+export interface ConnectSessionRequest {
+  /** The Claude session ID to write into frontmatter */
+  sessionId: string;
+}
+
+/**
+ * Response from the /active/connect-session/ endpoint
+ */
+export interface ConnectSessionResponse {
+  /** Vault-relative path of the connected file */
+  file: string;
+  /** The session ID that was written */
+  sessionId: string;
+}
+
+/**
+ * Connect a Claude session to the active Obsidian note.
+ *
+ * This method calls the /active/connect-session/ endpoint provided by the AME3Helper
+ * plugin's REST API extension. It atomically writes the 'ai-claude-session' frontmatter
+ * field using Obsidian's processFrontMatter API.
+ *
+ * @param _request - The HTTP request function from the service
+ * @param context - Request context for logging and correlation
+ * @param params - The session connection parameters
+ * @returns Promise resolving to the connect session response
+ * @throws Error if no active file, invalid sessionId, or frontmatter write fails
+ */
+export async function connectSession(
+  _request: RequestFunction,
+  context: RequestContext,
+  params: ConnectSessionRequest,
+): Promise<ConnectSessionResponse> {
+  return _request<ConnectSessionResponse>(
+    {
+      method: 'POST',
+      url: '/active/connect-session/',
+      data: params,
+    },
+    context,
+    'connectSession',
+  );
+}
+
+/**
+ * Request parameters for disconnecting a session from a note
+ */
+export interface DisconnectSessionRequest {
+  /** Optional vault-relative path. If omitted, uses the active note. */
+  filePath?: string;
+}
+
+/**
+ * Response from the /active/disconnect-session/ endpoint
+ */
+export interface DisconnectSessionResponse {
+  /** Vault-relative path of the disconnected file */
+  file: string;
+  /** Whether the disconnect succeeded */
+  disconnected: boolean;
+}
+
+/**
+ * Disconnect a Claude session from an Obsidian note.
+ *
+ * This method calls the /active/disconnect-session/ endpoint provided by the AME3Helper
+ * plugin's REST API extension. It atomically removes the 'ai-claude-session' frontmatter
+ * field using Obsidian's processFrontMatter API.
+ *
+ * @param _request - The HTTP request function from the service
+ * @param context - Request context for logging and correlation
+ * @param params - Optional parameters (filePath to target a specific note)
+ * @returns Promise resolving to the disconnect session response
+ * @throws Error if file not found or frontmatter write fails
+ */
+export async function disconnectSession(
+  _request: RequestFunction,
+  context: RequestContext,
+  params: DisconnectSessionRequest,
+): Promise<DisconnectSessionResponse> {
+  return _request<DisconnectSessionResponse>(
+    {
+      method: 'POST',
+      url: '/active/disconnect-session/',
+      data: params,
+    },
+    context,
+    'disconnectSession',
   );
 }
