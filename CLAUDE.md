@@ -333,7 +333,7 @@ npm install
 **Parent Vault**: This plugin is deployed within `/Users/peterbeck/Obsidian/AME3/.obsidian/plugins/`.
 
 **Related Systems**:
-- AME3Helper plugin (content publishing)
+- AME3Helper plugin (content management, Hugo publishing, AI Skills)
 - AI Assistant plugin (AI integration)
 - Parent vault's MCP configuration in Claude Desktop/Code settings
 
