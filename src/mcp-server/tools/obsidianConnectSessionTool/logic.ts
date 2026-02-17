@@ -19,10 +19,17 @@ export const ObsidianConnectSessionInputSchema = z
     sessionId: z
       .string()
       .min(1, "sessionId must be a non-empty string")
-      .describe("The Claude session ID to write into the active note's frontmatter"),
+      .describe("The Claude session ID to write into the note's frontmatter"),
+    filePath: z
+      .string()
+      .min(1, "filePath must be a non-empty string if provided")
+      .optional()
+      .describe(
+        "Vault-relative path of the note to connect. If omitted, connects to the currently active (focused) note in the editor.",
+      ),
   })
   .describe(
-    "Connects a Claude session to the currently active Obsidian note by writing 'ai-claude-session' frontmatter.",
+    "Connects a Claude session to an Obsidian note by writing 'ai-claude-session' frontmatter. If filePath is provided, connects to that specific note. If omitted, connects to the currently active note.",
   );
 
 /**
@@ -79,7 +86,7 @@ export const processObsidianConnectSession = async (
   obsidianService: ObsidianRestApiService,
 ): Promise<ObsidianConnectSessionResponse> => {
   logger.debug(
-    `Processing obsidian_connect_session request with sessionId: ${params.sessionId}`,
+    `Processing obsidian_connect_session request with sessionId: ${params.sessionId}${params.filePath ? `, filePath: ${params.filePath}` : " (active note)"}`,
     context,
   );
 
@@ -94,6 +101,7 @@ export const processObsidianConnectSession = async (
       () =>
         obsidianService.connectSession(connectContext, {
           sessionId: params.sessionId,
+          ...(params.filePath ? { filePath: params.filePath } : {}),
         }),
       {
         operationName: "connectSessionWithRetry",

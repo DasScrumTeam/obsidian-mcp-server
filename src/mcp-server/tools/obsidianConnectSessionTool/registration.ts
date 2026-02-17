@@ -35,7 +35,7 @@ export const registerObsidianConnectSessionTool = async (
 ): Promise<void> => {
   const toolName = "obsidian_connect_session";
   const toolDescription =
-    "Connects a Claude session to the currently active Obsidian note. Atomically writes 'ai-claude-session' frontmatter field. Returns connected file path and session ID. Requires the AME3Helper plugin with REST API extension to be active.";
+    "Writes the 'ai-claude-session' frontmatter field to an Obsidian note, linking this Claude session to that note. If filePath is provided, connects to that specific note. If filePath is omitted, connects to whichever note is currently open and focused in the Obsidian editor. Returns the connected file path and session ID. Requires the AME3Helper plugin with REST API extension to be active.";
 
   const registrationContext: RequestContext =
     requestContextService.createRequestContext({
@@ -58,7 +58,7 @@ export const registerObsidianConnectSessionTool = async (
               parentContext: registrationContext,
               operation: "HandleObsidianConnectSessionRequest",
               toolName: toolName,
-              params: { sessionId: params.sessionId },
+              params: { sessionId: params.sessionId, filePath: params.filePath },
             });
           logger.debug(`Handling '${toolName}' request`, handlerContext);
 

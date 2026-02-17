@@ -164,11 +164,13 @@ export async function replaceActiveSection(
 }
 
 /**
- * Request parameters for connecting a session to the active note
+ * Request parameters for connecting a session to a note
  */
 export interface ConnectSessionRequest {
   /** The Claude session ID to write into frontmatter */
   sessionId: string;
+  /** Optional vault-relative path. If omitted, uses the active note. */
+  filePath?: string;
 }
 
 /**
@@ -182,17 +184,20 @@ export interface ConnectSessionResponse {
 }
 
 /**
- * Connect a Claude session to the active Obsidian note.
+ * Connect a Claude session to an Obsidian note.
  *
  * This method calls the /active/connect-session/ endpoint provided by the AME3Helper
  * plugin's REST API extension. It atomically writes the 'ai-claude-session' frontmatter
  * field using Obsidian's processFrontMatter API.
  *
+ * If filePath is provided, connects to that specific note.
+ * If filePath is omitted, connects to the currently active (focused) note.
+ *
  * @param _request - The HTTP request function from the service
  * @param context - Request context for logging and correlation
- * @param params - The session connection parameters
+ * @param params - The session connection parameters (sessionId required, filePath optional)
  * @returns Promise resolving to the connect session response
- * @throws Error if no active file, invalid sessionId, or frontmatter write fails
+ * @throws Error if no active file, file not found, invalid sessionId, or frontmatter write fails
  */
 export async function connectSession(
   _request: RequestFunction,
