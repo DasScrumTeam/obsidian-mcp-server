@@ -261,3 +261,74 @@ export async function disconnectSession(
     'disconnectSession',
   );
 }
+
+// --- Publish Methods ---
+
+/**
+ * Response from the /active/publish/hugo/ endpoint
+ */
+export interface PublishHugoResponse {
+  success: boolean;
+  duration: number;
+  error?: string;
+}
+
+/**
+ * Response from the /active/publish/quarto/ endpoint
+ */
+export interface PublishQuartoResponse {
+  success: boolean;
+  chapters: number;
+  images: number;
+  warnings: string[];
+  duration: number;
+  error?: string;
+}
+
+/**
+ * Trigger a full Hugo publish and return structured results.
+ *
+ * This method calls the /active/publish/hugo/ endpoint provided by the AME3Helper
+ * plugin's REST API extension.
+ *
+ * @param _request - The HTTP request function from the service
+ * @param context - Request context for logging and correlation
+ * @returns Promise resolving to the publish result
+ */
+export async function publishHugo(
+  _request: RequestFunction,
+  context: RequestContext,
+): Promise<PublishHugoResponse> {
+  return _request<PublishHugoResponse>(
+    {
+      method: 'POST',
+      url: '/active/publish/hugo/',
+    },
+    context,
+    'publishHugo',
+  );
+}
+
+/**
+ * Trigger a full Quarto publish and return structured results.
+ *
+ * This method calls the /active/publish/quarto/ endpoint provided by the AME3Helper
+ * plugin's REST API extension.
+ *
+ * @param _request - The HTTP request function from the service
+ * @param context - Request context for logging and correlation
+ * @returns Promise resolving to the publish result
+ */
+export async function publishQuarto(
+  _request: RequestFunction,
+  context: RequestContext,
+): Promise<PublishQuartoResponse> {
+  return _request<PublishQuartoResponse>(
+    {
+      method: 'POST',
+      url: '/active/publish/quarto/',
+    },
+    context,
+    'publishQuarto',
+  );
+}

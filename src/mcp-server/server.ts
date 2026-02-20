@@ -40,6 +40,8 @@ import { registerObsidianManageFrontmatterTool } from "./tools/obsidianManageFro
 import { registerObsidianManageTagsTool } from "./tools/obsidianManageTagsTool/index.js";
 import { registerObsidianListCommandsTool } from "./tools/obsidianListCommandsTool/index.js";
 import { registerObsidianExecuteCommandTool } from "./tools/obsidianExecuteCommandTool/index.js";
+import { registerObsidianPublishHugoTool } from "./tools/obsidianPublishHugoTool/index.js";
+import { registerObsidianPublishQuartoTool } from "./tools/obsidianPublishQuartoTool/index.js";
 // Import transport setup functions.
 import { startHttpTransport } from "./transports/httpTransport.js";
 import { connectStdioTransport } from "./transports/stdioTransport.js";
@@ -155,6 +157,8 @@ async function createMcpServerInstance(
     );
     await registerObsidianListCommandsTool(server, obsidianService);
     await registerObsidianExecuteCommandTool(server, obsidianService);
+    await registerObsidianPublishHugoTool(server, obsidianService);
+    await registerObsidianPublishQuartoTool(server, obsidianService);
 
     logger.info("Resources and tools registered successfully", context);
 

@@ -719,4 +719,36 @@ export class ObsidianRestApiService {
       params,
     );
   }
+
+  // --- Publish Methods ---
+
+  /**
+   * Trigger a full Hugo publish workflow.
+   *
+   * Calls the /active/publish/hugo/ endpoint provided by the AME3Helper plugin.
+   * Returns structured results including success status and duration.
+   *
+   * @param context - Request context for logging and correlation
+   * @returns Promise resolving to the Hugo publish result
+   */
+  async publishHugo(
+    context: RequestContext,
+  ): Promise<editorMethods.PublishHugoResponse> {
+    return editorMethods.publishHugo(this._request.bind(this), context);
+  }
+
+  /**
+   * Trigger a full Quarto publish workflow.
+   *
+   * Calls the /active/publish/quarto/ endpoint provided by the AME3Helper plugin.
+   * Returns structured results including chapter/image counts, warnings, and duration.
+   *
+   * @param context - Request context for logging and correlation
+   * @returns Promise resolving to the Quarto publish result
+   */
+  async publishQuarto(
+    context: RequestContext,
+  ): Promise<editorMethods.PublishQuartoResponse> {
+    return editorMethods.publishQuarto(this._request.bind(this), context);
+  }
 }
